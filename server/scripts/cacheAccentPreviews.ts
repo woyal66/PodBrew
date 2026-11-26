@@ -38,7 +38,7 @@ function loadDone(accent: string): Set<string> {
 function saveDone(accent: string, set: Set<string>) {
   try {
     fs.mkdirSync(PROGRESS_DIR, { recursive: true });
-    fs.writeFileSync(progressFile(accent), JSON.stringify([...set]));
+    fs.writeFileSync(progressFile(accent), JSON.stringify(Array.from(set)));
   } catch {}
 }
 

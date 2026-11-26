@@ -23,6 +23,7 @@ import {
   Calendar,
   BookOpen,
   Stethoscope,
+  BrainCircuit,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ const TEMPLATE_ICON_MAP: Record<TemplateIconName, LucideIcon> = {
   Calendar,
   BookOpen,
   Stethoscope,
+  BrainCircuit,
 };
 
 type CategoryChipValue = "all" | TemplateCategory;

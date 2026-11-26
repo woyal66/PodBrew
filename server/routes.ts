@@ -7,7 +7,7 @@ import { generatePodcastLegacy as generatePodcast } from "./podcast/simpleGenera
 import { generateOrGetCoverArt, generatePlaylistCoverArt } from "./services/CoverArtCache";
 import { ObjectStorageService } from "./objectStorage";
 import { z } from "zod";
-import { voiceIdSchema, voiceQualitySchema, VOICE_QUALITY_TIERS, voices, MUSIC_STYLE_IDS, type TimeFrame, type MusicStyleId, type SyllabusEpisode, type PodcastEngagement, type EnrichedPodcast } from "@shared/schema";
+import { voiceIdSchema, voiceQualitySchema, VOICE_QUALITY_TIERS, voices, MUSIC_STYLE_IDS, type TimeFrame, type MusicStyleId, type SyllabusEpisode, type PodcastEngagement, type EnrichedPodcast, type GeneratedPodcast } from "@shared/schema";
 import { enhanceTopicWithContext, searchUpcomingEvents, type TrendingCategory } from "./perplexity";
 import { getTrendingTopicsCached } from "./services/TrendingCache";
 import { enhanceTopicWithContextCached } from "./services/ContextCache";
@@ -5957,14 +5957,14 @@ ${rssItems}
 
     // Credit check — flat 2 credits for a deep dive
     const DEEP_DIVE_CREDIT_COST = 2;
-    await checkAndDeductCreditsAtomic(userId, DEEP_DIVE_CREDIT_COST, `deep-dive:${topic.slice(0, 40)}`);
+    await checkAndDeductCreditsAtomic(userId, DEEP_DIVE_CREDIT_COST);
 
     // Resolve optional document source
     let sourceText: string | undefined;
     if (documentId) {
       const cachedDoc = getDocument(documentId);
-      if (cachedDoc?.content) {
-        sourceText = cachedDoc.content;
+      if (cachedDoc?.text) {
+        sourceText = cachedDoc.text;
         logger.info('[DeepDive] Using uploaded document as source', {
           documentId,
           wordCount: cachedDoc.wordCount,
@@ -5977,8 +5977,8 @@ ${rssItems}
       audioBuffer = await generateDeepDivePodcast({ topic, sourceUrl, sourceText });
     } catch (genErr) {
       // Refund credits on failure
-      await refundCredits(userId, DEEP_DIVE_CREDIT_COST, `deep-dive-refund:${topic.slice(0, 40)}`).catch(() => {});
-      throw ApiErrors.internal(
+      await refundCredits(userId, DEEP_DIVE_CREDIT_COST).catch(() => {});
+      throw ApiErrors.internalError(
         `NotebookLM generation failed: ${genErr instanceof Error ? genErr.message : String(genErr)}`
       );
     }
@@ -5990,8 +5990,8 @@ ${rssItems}
       const filename = `podcasts/deepdive-${Date.now()}.mp3`;
       audioUrl = await objectStorage.uploadBuffer(filename, audioBuffer, "audio/mpeg");
     } catch (uploadErr) {
-      await refundCredits(userId, DEEP_DIVE_CREDIT_COST, `deep-dive-refund:${topic.slice(0, 40)}`).catch(() => {});
-      throw ApiErrors.internal(
+      await refundCredits(userId, DEEP_DIVE_CREDIT_COST).catch(() => {});
+      throw ApiErrors.internalError(
         `Deep Dive upload failed: ${uploadErr instanceof Error ? uploadErr.message : String(uploadErr)}`
       );
     }
@@ -6048,8 +6048,8 @@ ${rssItems}
         },
       });
     } catch (dbErr) {
-      await refundCredits(userId, DEEP_DIVE_CREDIT_COST, `deep-dive-refund:${topic.slice(0, 40)}`).catch(() => {});
-      throw ApiErrors.internal(
+      await refundCredits(userId, DEEP_DIVE_CREDIT_COST).catch(() => {});
+      throw ApiErrors.internalError(
         `Deep Dive could not be saved: ${dbErr instanceof Error ? dbErr.message : String(dbErr)}`
       );
     }

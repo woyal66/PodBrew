@@ -294,8 +294,17 @@ async function runStartupMigrations() {
   // reaction_type migration and is NOT NULL with no default, causing every
   // new like/dislike INSERT to fail with a constraint violation.
   try {
+    // Only older databases have this column; skip cleanly on fresh ones.
     await db.execute(sql`
-      ALTER TABLE podcast_likes ALTER COLUMN value SET DEFAULT 0
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'podcast_likes' AND column_name = 'value'
+        ) THEN
+          ALTER TABLE podcast_likes ALTER COLUMN value SET DEFAULT 0;
+        END IF;
+      END $$
     `);
     console.log('[StartupMigration] ✅ podcast_likes.value column default patched');
   } catch (error: any) {

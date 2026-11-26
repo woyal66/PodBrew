@@ -78,7 +78,7 @@ export function providerCooldownRemaining(provider: string): number {
 export function getProviderStatus(): Record<string, { cooldownUntil: number; remainingMs: number; reason: string } | { active: true }> {
   const out: Record<string, any> = {};
   const now = Date.now();
-  for (const [provider, entry] of cooldowns.entries()) {
+  for (const [provider, entry] of Array.from(cooldowns.entries())) {
     if (entry.until > now) {
       out[provider] = {
         cooldownUntil: entry.until,
