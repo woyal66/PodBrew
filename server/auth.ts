@@ -578,95 +578,99 @@ export async function setupAuth(app: Express) {
     });
   });
 
-  // Developer login endpoint (for testing only)
-  app.post('/api/auth/dev-login', async (req, res) => {
-    try {
-      const devEmail = 'leyton.sita80@gmail.com';
+  // Developer login endpoints (for testing only). These log anyone in as the
+  // owner's account, so they must never be registered in production.
+  if (process.env.NODE_ENV !== 'production') {
+    // Developer login endpoint (for testing only)
+    app.post('/api/auth/dev-login', async (req, res) => {
+      try {
+        const devEmail = 'leyton.sita80@gmail.com';
       
-      // Check if dev user exists
-      let [devUser] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, devEmail))
-        .limit(1);
+        // Check if dev user exists
+        let [devUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, devEmail))
+          .limit(1);
 
-      // Create dev user if doesn't exist
-      if (!devUser) {
-        const [newUser] = await db
-          .insert(users)
-          .values({
-            email: devEmail,
-            firstName: 'Leyton',
-            lastName: 'Developer',
-            authProvider: 'email',
-            credits: 10000,
-            subscriptionPlan: 'enterprise',
-            subscriptionStatus: 'active',
-            onboardingCompleted: true,
-          })
-          .returning();
-        devUser = newUser;
-      }
-
-      // Log user in
-      req.login(devUser as Express.User, (err) => {
-        if (err) {
-          console.error('[Auth] Dev login failed:', err);
-          return res.status(500).json({ error: 'Failed to log in' });
+        // Create dev user if doesn't exist
+        if (!devUser) {
+          const [newUser] = await db
+            .insert(users)
+            .values({
+              email: devEmail,
+              firstName: 'Leyton',
+              lastName: 'Developer',
+              authProvider: 'email',
+              credits: 10000,
+              subscriptionPlan: 'enterprise',
+              subscriptionStatus: 'active',
+              onboardingCompleted: true,
+            })
+            .returning();
+          devUser = newUser;
         }
-        console.log('[Auth] Developer logged in:', devEmail);
-        res.json({ user: devUser, message: 'Developer logged in successfully' });
-      });
-    } catch (error) {
-      console.error('[Auth] Dev login error:', error);
-      res.status(500).json({ error: 'Failed to log in as developer' });
-    }
-  });
 
-  // Developer redirect endpoint - logs in and redirects to app
-  app.get('/dev-login', async (req, res) => {
-    try {
-      const devEmail = 'leyton.sita80@gmail.com';
+        // Log user in
+        req.login(devUser as Express.User, (err) => {
+          if (err) {
+            console.error('[Auth] Dev login failed:', err);
+            return res.status(500).json({ error: 'Failed to log in' });
+          }
+          console.log('[Auth] Developer logged in:', devEmail);
+          res.json({ user: devUser, message: 'Developer logged in successfully' });
+        });
+      } catch (error) {
+        console.error('[Auth] Dev login error:', error);
+        res.status(500).json({ error: 'Failed to log in as developer' });
+      }
+    });
+
+    // Developer redirect endpoint - logs in and redirects to app
+    app.get('/dev-login', async (req, res) => {
+      try {
+        const devEmail = 'leyton.sita80@gmail.com';
       
-      // Check if dev user exists
-      let [devUser] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, devEmail))
-        .limit(1);
+        // Check if dev user exists
+        let [devUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, devEmail))
+          .limit(1);
 
-      // Create dev user if doesn't exist
-      if (!devUser) {
-        const [newUser] = await db
-          .insert(users)
-          .values({
-            email: devEmail,
-            firstName: 'Leyton',
-            lastName: 'Developer',
-            authProvider: 'email',
-            credits: 10000,
-            subscriptionPlan: 'enterprise',
-            subscriptionStatus: 'active',
-            onboardingCompleted: true,
-          })
-          .returning();
-        devUser = newUser;
-      }
-
-      // Log user in and redirect
-      req.login(devUser as Express.User, (err) => {
-        if (err) {
-          console.error('[Auth] Dev login redirect failed:', err);
-          return res.redirect('/?error=dev_login_failed');
+        // Create dev user if doesn't exist
+        if (!devUser) {
+          const [newUser] = await db
+            .insert(users)
+            .values({
+              email: devEmail,
+              firstName: 'Leyton',
+              lastName: 'Developer',
+              authProvider: 'email',
+              credits: 10000,
+              subscriptionPlan: 'enterprise',
+              subscriptionStatus: 'active',
+              onboardingCompleted: true,
+            })
+            .returning();
+          devUser = newUser;
         }
-        console.log('[Auth] Developer logged in via redirect:', devEmail);
-        res.redirect('/');
-      });
-    } catch (error) {
-      console.error('[Auth] Dev login redirect error:', error);
-      res.redirect('/?error=dev_login_error');
-    }
-  });
+
+        // Log user in and redirect
+        req.login(devUser as Express.User, (err) => {
+          if (err) {
+            console.error('[Auth] Dev login redirect failed:', err);
+            return res.redirect('/?error=dev_login_failed');
+          }
+          console.log('[Auth] Developer logged in via redirect:', devEmail);
+          res.redirect('/');
+        });
+      } catch (error) {
+        console.error('[Auth] Dev login redirect error:', error);
+        res.redirect('/?error=dev_login_error');
+      }
+    });
+  }
 }
 
 // Allows both authenticated users AND guests (with x-guest-id header)
