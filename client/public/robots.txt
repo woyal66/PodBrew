@@ -1,0 +1,58 @@
+# Robots.txt for PodBrew - AI Podcast Generator
+# https://podbrew.pro
+
+# Allow all search engines to crawl the site
+User-agent: *
+Allow: /
+Allow: /create
+Allow: /voices
+Allow: /listen
+Allow: /library
+
+# Disallow admin and API endpoints from being indexed
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemap location
+Sitemap: https://podbrew.pro/sitemap.xml
+
+# Crawl delay (be respectful to our servers)
+Crawl-delay: 1
+
+# Block AI training bots from scraping content
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+# Allow Google, Bing, and other legitimate search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /

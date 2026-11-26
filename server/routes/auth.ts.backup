@@ -1,0 +1,195 @@
+import { Router, type Response } from "express";
+import bcrypt from "bcrypt";
+import { z } from "zod";
+import { db } from "../db";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { DEFAULT_TIER_RESTRICTIONS } from "@shared/schema";
+
+const router = Router();
+
+const signupSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+const signinSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+router.post("/signup", async (req, res: Response) => {
+  try {
+    const { email, password } = signupSchema.parse(req.body);
+    
+    const existingUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: "Email already registered" });
+    }
+    
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    // Don't set sessionId during signup - authenticated users use userId cookie
+    // sessionId is only for anonymous session tracking
+    const newUser = await db
+      .insert(users)
+      .values({
+        email,
+        passwordHash,
+        credits: 30,
+        subscriptionPlan: "free",
+        subscriptionStatus: "active",
+        onboardingCompleted: false,
+        tierRestrictions: DEFAULT_TIER_RESTRICTIONS.free,
+      })
+      .returning();
+    
+    res.cookie('userId', newUser[0].id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+    });
+    
+    return res.json({
+      user: {
+        id: newUser[0].id,
+        email: newUser[0].email,
+        credits: newUser[0].credits,
+        plan: newUser[0].subscriptionPlan,
+        onboardingCompleted: newUser[0].onboardingCompleted,
+        tierRestrictions: newUser[0].tierRestrictions,
+      },
+    });
+  } catch (error: any) {
+    console.error("Signup error:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    return res.status(500).json({ error: "Failed to create account" });
+  }
+});
+
+router.post("/signin", async (req, res: Response) => {
+  try {
+    const { email, password } = signinSchema.parse(req.body);
+    
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    
+    if (user.length === 0 || !user[0].passwordHash) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+    
+    const isValidPassword = await bcrypt.compare(password, user[0].passwordHash);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+    
+    res.cookie('userId', user[0].id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+    });
+    
+    return res.json({
+      user: {
+        id: user[0].id,
+        email: user[0].email,
+        credits: user[0].credits,
+        plan: user[0].subscriptionPlan,
+        onboardingCompleted: user[0].onboardingCompleted,
+        tierRestrictions: user[0].tierRestrictions || DEFAULT_TIER_RESTRICTIONS[user[0].subscriptionPlan as keyof typeof DEFAULT_TIER_RESTRICTIONS] || DEFAULT_TIER_RESTRICTIONS.free,
+      },
+    });
+  } catch (error: any) {
+    console.error("Signin error:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    return res.status(500).json({ error: "Failed to sign in" });
+  }
+});
+
+router.post("/signout", async (_req, res: Response) => {
+  try {
+    res.clearCookie('userId');
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Signout error:", error);
+    return res.status(500).json({ error: "Failed to sign out" });
+  }
+});
+
+router.get("/status", async (req, res: Response) => {
+  try {
+    const userId = req.userId;
+    
+    if (!userId) {
+      return res.json({
+        authenticated: false,
+        user: null,
+      });
+    }
+    
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    
+    if (user.length === 0) {
+      return res.json({
+        authenticated: false,
+        user: null,
+      });
+    }
+    
+    return res.json({
+      authenticated: true,
+      user: {
+        id: user[0].id,
+        email: user[0].email,
+        credits: user[0].credits,
+        plan: user[0].subscriptionPlan,
+        onboardingCompleted: user[0].onboardingCompleted,
+        tierRestrictions: user[0].tierRestrictions || DEFAULT_TIER_RESTRICTIONS[user[0].subscriptionPlan as keyof typeof DEFAULT_TIER_RESTRICTIONS] || DEFAULT_TIER_RESTRICTIONS.free,
+      },
+    });
+  } catch (error) {
+    console.error("Auth status error:", error);
+    return res.status(500).json({ error: "Failed to get auth status" });
+  }
+});
+
+router.post("/complete-onboarding", async (req, res: Response) => {
+  try {
+    const userId = req.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    await db
+      .update(users)
+      .set({ onboardingCompleted: true })
+      .where(eq(users.id, userId));
+    
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Complete onboarding error:", error);
+    return res.status(500).json({ error: "Failed to complete onboarding" });
+  }
+});
+
+export const authRouter = router;

@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PodBrew</string>
+    <string name="title_activity_main">PodBrew</string>
+    <string name="package_name">com.podbrew.app</string>
+    <string name="custom_url_scheme">com.podbrew.app</string>
+    <string name="server_client_id">106356212169-4mn9hiosfdumfgla9ks2socq7i9lqkn9.apps.googleusercontent.com</string>
+</resources>

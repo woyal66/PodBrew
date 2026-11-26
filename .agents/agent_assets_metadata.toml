@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "6wzmRSVRPPFStrVfwn1iC"
+uri = "file://attached_assets/generated_videos/podbrew_waveform_ui.mp4"
+type = "video"
+title = "Scene 1 — Waveform UI"
+
+[[outputs]]
+id = "bWn4iYXNSu_LmyvUERnPB"
+uri = "file://attached_assets/generated_videos/podbrew_ai_generation.mp4"
+type = "video"
+title = "Scene 2 — AI Generation"
+
+[[outputs]]
+id = "q6L8mK6eepyEW9uvElDVL"
+uri = "file://attached_assets/generated_videos/podbrew_multi_voice.mp4"
+type = "video"
+title = "Scene 3 — Multi-Voice Hosts"
+
+[[outputs]]
+id = "uOq7bQSXPnKWoDr3eBxGk"
+uri = "file://attached_assets/generated_videos/podbrew_mobile_app.mp4"
+type = "video"
+title = "Scene 4 — Mobile App"
+
+[[outputs]]
+id = "dZpzWYW1s1boxNATWJKjg"
+uri = "file://attached_assets/generated_videos/podbrew_ai_brew.mp4"
+type = "video"
+title = "Scene 5 — The Brew"
+
+[[outputs]]
+id = "zU96ee4nTbVPpMkYrm6T7"
+uri = "file://DEPLOYMENT_GUIDE.md"
+type = "text"
+title = "PodBrew Self-Hosting Deployment Guide"
+
+[[outputs]]
+id = "r3oCICTocOq9Jay8K5LkW"
+uri = "file://podbrew-source.tar.gz"
+type = "unspecified"
+title = "PodBrew Source Archive (.tar.gz)"
